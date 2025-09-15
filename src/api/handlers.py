@@ -1,89 +1,30 @@
-from fastapi import Request, HTTPException, UploadFile
-from pathlib import Path
-import tempfile
-import shutil
+from typing import Dict, List, Optional, Any
+from pydantic import BaseModel, Field
+from enum import Enum
 
-from services.tts_service import MinimaxTtsService
-from core.managers import get_server_manager
-from api.models import GenerateSpeechRequest, HealthStatus
-from utils.resources.logger import logger
-from utils.config.settings import settings
+class HealthStatus(str, Enum):
+    """Enum for health check status."""
+    HEALTHY = "healthy"
+    UNHEALTHY = "unhealthy"
 
-# ... (rest of the file remains the same) ...
-class TtsHandler:
-    def _get_tts_service(self, request: Request) -> MinimaxTtsService:
-        try:
-            server_manager = get_server_manager(request)
-            service = server_manager.get_service("minimax_tts")
-            if not service or not isinstance(service, MinimaxTtsService):
-                raise HTTPException(status_code=503, detail="TTS service is not available.")
-            if not service.is_initialized:
-                raise HTTPException(status_code=503, detail="TTS service is not initialized.")
-            return service
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"Failed to retrieve TTS service: {e}")
-            raise HTTPException(status_code=500, detail="Could not access the TTS service.")
+# --- Request Schemas ---
 
-    async def generate_speech(self, request_data: GenerateSpeechRequest, request: Request) -> bytes:
-        tts_service = self._get_tts_service(request)
-        audio_bytes = await tts_service.generate_speech_bytes(request_data.text, request_data.voice_id)
-        if not audio_bytes:
-            raise HTTPException(status_code=500, detail="Failed to generate audio from the backend API.")
-        return audio_bytes
+class GenerateSpeechRequest(BaseModel):
+    text: str = Field(..., min_length=1, description="The text to synthesize.", example="Hello, this is a test of the API.")
+    voice_id: str = Field(..., min_length=1, description="The ID of the voice to use.", example="CustomVoice1757415581")
 
-    async def clone_voice(self, new_voice_id: str, audio_file: UploadFile, request: Request) -> dict:
-        tts_service = self._get_tts_service(request)
-        try:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=Path(audio_file.filename).suffix) as tmp:
-                shutil.copyfileobj(audio_file.file, tmp)
-                tmp_path = Path(tmp.name)
-        finally:
-            audio_file.file.close()
+# --- Response Schemas ---
 
-        cloned_voice_id = await tts_service.create_voice_from_file(tmp_path, new_voice_id)
-        tmp_path.unlink()
+class VoiceCloneResponse(BaseModel):
+    success: bool
+    message: str
+    voice_id: Optional[str] = None
 
-        if cloned_voice_id:
-            return {"success": True, "message": "Voice cloned successfully.", "voice_id": cloned_voice_id}
-        else:
-            raise HTTPException(status_code=500, detail="Failed to clone voice from the backend API.")
+class HealthCheckResponse(BaseModel):
+    status: HealthStatus
+    service_name: str
+    version: str
+    services: Dict[str, Any]
 
-    async def clone_and_generate_speech(self, text: str, new_voice_id: str, audio_file: UploadFile, request: Request) -> bytes:
-        tts_service = self._get_tts_service(request)
-        try:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=Path(audio_file.filename).suffix) as tmp:
-                shutil.copyfileobj(audio_file.file, tmp)
-                tmp_path = Path(tmp.name)
-        finally:
-            audio_file.file.close()
-
-        audio_bytes = await tts_service.clone_and_generate_speech_bytes(
-            text=text,
-            audio_clone_path=str(tmp_path),
-            new_voice_id=new_voice_id,
-        )
-        tmp_path.unlink()
-
-        if not audio_bytes:
-            raise HTTPException(status_code=500, detail="Failed to complete clone-and-generate workflow.")
-        return audio_bytes
-
-    async def get_health_status(self, request: Request) -> dict:
-        server_manager = get_server_manager(request)
-        service_statuses = {name: service.get_status() for name, service in server_manager.services.items()}
-        
-        overall_status = HealthStatus.HEALTHY
-        if not all(s.get("initialized", False) for s in service_statuses.values()):
-            overall_status = HealthStatus.UNHEALTHY
-
-        return {
-            "status": overall_status,
-            "service_name": settings.get("app.name"),
-            "version": settings.get("app.version"),
-            "services": service_statuses
-        }
-
-def get_tts_handler() -> TtsHandler:
-    return TtsHandler()
+class ErrorDetail(BaseModel):
+    detail: str

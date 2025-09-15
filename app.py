@@ -1,25 +1,14 @@
-import sys
-from pathlib import Path
 import uvicorn
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
-# --- THIS IS THE SINGLE SOURCE OF TRUTH FOR THE PYTHON PATH ---
-# Add the 'src' directory, which contains all our modules, to the system path.
-# This ensures that any part of the application can import modules like 'api', 'core', etc.
-SRC_PATH = str(Path(__file__).resolve().parent / "src")
-if SRC_PATH not in sys.path:
-    sys.path.insert(0, SRC_PATH)
-# ---------------------------------------------------------------
-
-# Now that the path is set, these imports will work reliably.
-from api.routes import router as api_router
-from core.server_manager import create_server_manager, ServerManager
-from core.process_manager import create_process_manager, ProcessManager
-from utils.resources.logger import logger
-from utils.config.settings import settings
+from src.api.routes import router as api_router
+from src.core.server_manager import create_server_manager, ServerManager
+from src.core.process_manager import create_process_manager, ProcessManager
+from src.utils.resources.logger import logger
+from src.utils.config.settings import settings
 
 # Global instances for server and process management
 server_manager: ServerManager = None
@@ -27,36 +16,52 @@ process_manager: ProcessManager = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Handle application lifespan events (startup and shutdown)."""
+    """
+    Handle application lifespan events (startup and shutdown)
+    with integrated server and process management.
+    """
     global server_manager, process_manager
+    
     logger.info(f"Starting {settings.get('app.name', 'TTS API Service')}")
+    
     try:
         process_manager = create_process_manager()
         app.state.process_manager = process_manager
+        
         server_manager = create_server_manager()
         app.state.server_manager = server_manager
+
         await _register_services(server_manager)
+        
         server_manager.setup_signal_handlers()
+        
         if not await server_manager.initialize():
+            logger.error("Server manager initialization failed.")
             raise RuntimeError("Server manager initialization failed.")
-        logger.info(f"{settings.get('app.name')} started successfully.")
+        
+        logger.info(f"{settings.get('app.name')} started successfully. All services are ready.")
+        
     except Exception as e:
         logger.error(f"Error during application startup: {e}", exc_info=True)
         raise
+
     yield
+    
     logger.info(f"Shutting down {settings.get('app.name')}")
     try:
         if server_manager:
             await server_manager.shutdown()
+            logger.info("Server manager shutdown complete.")
     except Exception as e:
         logger.error(f"Error during application shutdown: {e}", exc_info=True)
 
 async def _register_services(manager: ServerManager):
     """Register all necessary services with the server manager."""
-    from services.tts_service import MinimaxTtsService
-    from core.server_manager import ServiceConfig
+    from src.services.tts_service import MinimaxTtsService
+    from src.core.server_manager import ServiceConfig
 
     services_config = settings.get("server_manager.services", {})
+    
     if "minimax_tts" in services_config:
         tts_config_data = services_config["minimax_tts"]
         if tts_config_data.get("enabled", True):

@@ -5,9 +5,12 @@ from httpx import Response
 from pathlib import Path
 import os
 
-# Set a dummy env var for testing if not already set
+# Set a dummy env var for testing if not already set.
+# This ensures tests run even without a real .env file.
 os.environ.setdefault("MINIMAX_API_KEY", "test-key")
 os.environ.setdefault("MINIMAX_GROUP_ID", "test-group")
+
+from src.utils.config.settings import settings # Import after setting env vars
 
 MINIMAX_BASE_URL = "https://api.minimax.io/v1"
 
