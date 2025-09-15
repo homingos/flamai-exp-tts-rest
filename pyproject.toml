@@ -1,0 +1,57 @@
+[project]
+name = "minimax-tts-api"
+version = "1.0.0"
+description = "Production-ready REST API for MiniMax TTS and Voice Cloning"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.116.1",
+    "uvicorn[standard]>=0.35.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "pyyaml>=6.0.0",
+    "python-dotenv>=1.0.0",
+    "python-multipart>=0.0.6",
+    "httpx>=0.25.0",
+    "structlog>=23.0.0",
+    "runpod>=1.7.13",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "respx>=0.20.0", # For mocking httpx calls in tests
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+    "pre-commit>=3.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+# This tells the build system where your package code is located.
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+# --- THIS IS THE CRUCIAL FIX FOR PYTEST ---
+# This tells pytest that the 'src' directory is the root for all imports.
+[tool.pytest.ini_options]
+pythonpath = "src"

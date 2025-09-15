@@ -1,0 +1,37 @@
+├── .docker/
+│   └── Dockerfile.cpu
+├── .env
+├── .dockerignore
+├── .gitignore
+├── README.md
+├── app.py
+├── pyproject.toml
+├── runpod_app.py
+├── src/
+│   ├── __init__.py
+│   ├── api/
+│   │   ├── __init__.py
+│   │   ├── handlers.py
+│   │   ├── models.py
+│   │   └── routes.py
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── managers.py
+│   │   ├── process_manager.py
+│   │   └── server_manager.py
+│   ├── services/
+│   │   ├── __init__.py
+│   │   └── tts_service.py
+│   └── utils/
+│       ├── __init__.py
+│       ├── config/
+│       │   ├── __init__.py
+│       │   ├── config.yaml
+│       │   └── settings.py
+│       └── resources/
+│           ├── __init__.py
+│           └── logger.py
+└── tests/
+    ├── __init__.py
+    ├── conftest.py
+    └── test_api.py

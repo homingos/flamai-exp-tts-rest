@@ -1,0 +1,53 @@
+# Application Configuration
+app:
+  name: "MiniMax TTS and Voice Cloning API"
+  version: "1.0.0"
+  description: "A production-ready API for Text-to-Speech and Voice Cloning."
+  debug: false
+  environment: "development" # Can be: production, development, testing
+
+# Server Configuration
+server:
+  host: "0.0.0.0"
+  port: 8000
+  reload: false
+  workers: 1
+
+# CORS Configuration
+cors:
+  allow_origins: ["*"]
+  allow_credentials: true
+  allow_methods: ["*"]
+  allow_headers: ["*"]
+
+# Logging Configuration
+logging:
+  level: "INFO" # debug, info, warning, error, critical
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# Server Manager Configuration
+server_manager:
+  # Directories used by the server and process managers
+  directories:
+    temp: "runtime/temp"
+    outputs: "runtime/outputs"
+    logs: "runtime/logs"
+    uploads: "runtime/uploads"
+  
+  # Services to be loaded at startup
+  services:
+    minimax_tts:
+      enabled: true
+      initialization_timeout: 60.0
+      config:
+        # IMPORTANT: Use environment variables for credentials in production.
+        api_key: "${MINIMAX_API_KEY}"
+        group_id: "${MINIMAX_GROUP_ID}"
+
+# Process Manager Configuration
+process_manager:
+  type: "stateful" # Use stateful for simple, in-memory tracking of uploads
+  cleanup:
+    enabled: true
+    interval: 3600  # Clean up temporary files every hour
+    process_ttl: 7200 # 2 hours
