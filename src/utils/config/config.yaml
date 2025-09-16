@@ -39,10 +39,7 @@ server_manager:
     minimax_tts:
       enabled: true
       initialization_timeout: 60.0
-      config:
-        # IMPORTANT: Use environment variables for credentials in production.
-        api_key: "${MINIMAX_API_KEY}"
-        group_id: "${MINIMAX_GROUP_ID}"
+      config: {}
 
 # Process Manager Configuration
 process_manager:

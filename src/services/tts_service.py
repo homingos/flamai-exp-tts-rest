@@ -1,4 +1,4 @@
-# /src/services/tts_service.py (DEBUG VERSION)
+# /src/services/tts_service.py
 
 import httpx
 import json
@@ -57,16 +57,8 @@ class MinimaxTtsService(AIService):
     async def _upload_audio(self, audio_path: Path) -> Optional[str]:
         """(Internal) Uploads an audio file and returns its file_id."""
         logger.info(f"Uploading audio file: {audio_path.name}")
-        url = f'{self.BASE_URL}/files/upload'
-        params = {'GroupId': self.group_id}
+        url = f'{self.BASE_URL}/files/upload?GroupId={self.group_id}'
         headers = {'Authorization': f'Bearer {self.api_key}'}
-        
-        # --- TEMPORARY DEBUGGING LINES ---
-        print("\n" + "="*20 + " UPLOAD DEBUG INFO " + "="*20)
-        print(f"Group ID Used: '{self.group_id}'")
-        print(f"API Key Used:  '{self.api_key}'")
-        print("="*60 + "\n")
-        # ---------------------------------
         
         try:
             with open(audio_path, 'rb') as audio_file:
@@ -74,7 +66,6 @@ class MinimaxTtsService(AIService):
                 response = await self.client.post(
                     url, 
                     headers=headers, 
-                    params=params, 
                     data={'purpose': 'voice_clone'}, 
                     files=files, 
                     timeout=60
@@ -96,13 +87,12 @@ class MinimaxTtsService(AIService):
     async def _create_voice_clone(self, file_id: str, new_voice_id: str) -> Optional[str]:
         """(Internal) Creates a voice clone from a file_id."""
         logger.info(f"Creating voice clone '{new_voice_id}'...")
-        url = f'{self.BASE_URL}/voice_clone'
-        params = {'GroupId': self.group_id}
+        url = f'{self.BASE_URL}/voice_clone?GroupId={self.group_id}'
         headers = {'Authorization': f'Bearer {self.api_key}', 'Content-Type': 'application/json'}
         payload = {"file_id": file_id, "voice_id": new_voice_id}
 
         try:
-            response = await self.client.post(url, headers=headers, params=params, json=payload, timeout=60)
+            response = await self.client.post(url, headers=headers, json=payload, timeout=60)
             response.raise_for_status()
             result = response.json()
             
@@ -119,17 +109,8 @@ class MinimaxTtsService(AIService):
     async def generate_speech_bytes(self, text: str, voice_id: str) -> Optional[bytes]:
         """Generates TTS audio and returns it as bytes."""
         logger.info(f"Generating speech with voice '{voice_id}'...")
-        url = f"{self.BASE_URL}/t2a_v2"
-        params = {'GroupId': self.group_id}
+        url = f"{self.BASE_URL}/t2a_v2?GroupId={self.group_id}"
         headers = {'Authorization': f'Bearer {self.api_key}', 'Content-Type': 'application/json'}
-        
-        # --- TEMPORARY DEBUGGING LINES ---
-        print("\n" + "="*20 + " GENERATE SPEECH DEBUG INFO " + "="*20)
-        print(f"Group ID Used: '{self.group_id}'")
-        print(f"API Key Used:  '{self.api_key}'")
-        print("="*60 + "\n")
-        # ---------------------------------
-        
         payload = {
             "model": "speech-2.5-hd-preview",
             "text": text,
@@ -138,7 +119,7 @@ class MinimaxTtsService(AIService):
             "audio_setting": {"format": "mp3"}
         }
         try:
-            response = await self.client.post(url, headers=headers, params=params, json=payload, timeout=120)
+            response = await self.client.post(url, headers=headers, json=payload, timeout=120)
             response.raise_for_status()
             result = response.json()
 
@@ -151,7 +132,10 @@ class MinimaxTtsService(AIService):
                 logger.error("TTS response contained no audio data.")
                 return None
             
+            # --- THE FINAL, CRITICAL FIX: The audio data is Hexadecimal ---
             audio_bytes = bytes.fromhex(audio_hex)
+            # -----------------------------------------------------------
+            
             logger.info(f"Successfully generated {len(audio_bytes)} bytes of audio.")
             return audio_bytes
         except Exception as e:

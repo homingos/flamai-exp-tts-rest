@@ -3,6 +3,8 @@
 from fastapi import APIRouter, Request, Depends, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
 from io import BytesIO
+from pathlib import Path
+import time
 
 from src.api.handlers import TtsHandler, get_tts_handler
 from src.api.models import (
@@ -11,8 +13,13 @@ from src.api.models import (
     HealthCheckResponse,
     ErrorDetail
 )
+from src.utils.resources.logger import logger
 
 router = APIRouter(prefix="/api/v1", tags=["TTS and Voice Cloning"])
+
+# Create a directory to save test outputs if it doesn't exist
+OUTPUT_DIR = Path("local_audio_tests")
+OUTPUT_DIR.mkdir(exist_ok=True)
 
 @router.post(
     "/tts/generate",
@@ -33,7 +40,18 @@ async def generate_speech(
     Generates audio and streams it back as an MP3 file.
     """
     audio_bytes = await handler.generate_speech(request_data, request)
+    
+    # Save the audio file locally for testing
+    if audio_bytes:
+        timestamp = int(time.time())
+        output_path = OUTPUT_DIR / f"generate_speech_{timestamp}.mp3"
+        with open(output_path, "wb") as f:
+            f.write(audio_bytes)
+        logger.info(f"SUCCESS: Audio file saved locally for testing at: {output_path}")
+        
     return StreamingResponse(BytesIO(audio_bytes), media_type="audio/mpeg")
+
+# ... (the rest of the routes.py file remains the same) ...
 
 @router.post(
     "/voice/clone",
@@ -48,7 +66,6 @@ async def clone_voice(
         min_length=8,
         pattern=r'^[a-zA-Z][a-zA-Z0-9]*$',
         description="A unique ID for the new voice. Must be at least 8 characters and start with a letter.",
-        # --- FIX: Changed 'example' to 'examples' ---
         examples=["MyCustomVoice01"]
     ),
     audio_file: UploadFile = File(..., description="The MP3 or WAV audio file for cloning."),
@@ -78,7 +95,6 @@ async def clone_and_generate(
         min_length=8,
         pattern=r'^[a-zA-Z][a-zA-Z0-9]*$',
         description="A unique ID for the new voice.",
-        # --- FIX: Changed 'example' to 'examples' ---
         examples=["MyNewCloneAndSpeakVoice"]
     ),
     audio_file: UploadFile = File(..., description="The audio file for cloning."),
@@ -88,6 +104,15 @@ async def clone_and_generate(
     Performs the full clone-and-speak workflow in a single API call.
     """
     audio_bytes = await handler.clone_and_generate_speech(text, new_voice_id, audio_file, request)
+
+    # Save the audio file locally for testing
+    if audio_bytes:
+        timestamp = int(time.time())
+        output_path = OUTPUT_DIR / f"clone_and_generate_{timestamp}.mp3"
+        with open(output_path, "wb") as f:
+            f.write(audio_bytes)
+        logger.info(f"SUCCESS: Audio file saved locally for testing at: {output_path}")
+
     return StreamingResponse(BytesIO(audio_bytes), media_type="audio/mpeg")
 
 @router.get("/health", response_model=HealthCheckResponse, summary="Service Health Check")
