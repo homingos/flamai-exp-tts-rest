@@ -1,10 +1,11 @@
+# /src/utils/resources/logger.py
+
 import logging
 import sys
 from pathlib import Path
 from typing import Optional
-from utils.config.settings import settings
+from src.utils.config.settings import settings  # <--- FIXED
 
-# ... (rest of the file remains the same) ...
 class Logger:
     _logger: Optional[logging.Logger] = None
 

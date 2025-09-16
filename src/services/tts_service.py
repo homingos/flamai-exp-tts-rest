@@ -1,3 +1,5 @@
+# /src/services/tts_service.py (DEBUG VERSION)
+
 import httpx
 import json
 import asyncio
@@ -59,18 +61,24 @@ class MinimaxTtsService(AIService):
         params = {'GroupId': self.group_id}
         headers = {'Authorization': f'Bearer {self.api_key}'}
         
+        # --- TEMPORARY DEBUGGING LINES ---
+        print("\n" + "="*20 + " UPLOAD DEBUG INFO " + "="*20)
+        print(f"Group ID Used: '{self.group_id}'")
+        print(f"API Key Used:  '{self.api_key}'")
+        print("="*60 + "\n")
+        # ---------------------------------
+        
         try:
             with open(audio_path, 'rb') as audio_file:
                 files = {'file': (audio_path.name, audio_file, 'audio/mpeg')}
-                async with httpx.AsyncClient() as client:
-                    response = await client.post(
-                        url, 
-                        headers=headers, 
-                        params=params, 
-                        data={'purpose': 'voice_clone'}, 
-                        files=files, 
-                        timeout=60
-                    )
+                response = await self.client.post(
+                    url, 
+                    headers=headers, 
+                    params=params, 
+                    data={'purpose': 'voice_clone'}, 
+                    files=files, 
+                    timeout=60
+                )
                 response.raise_for_status()
             
             result = response.json()
@@ -114,6 +122,14 @@ class MinimaxTtsService(AIService):
         url = f"{self.BASE_URL}/t2a_v2"
         params = {'GroupId': self.group_id}
         headers = {'Authorization': f'Bearer {self.api_key}', 'Content-Type': 'application/json'}
+        
+        # --- TEMPORARY DEBUGGING LINES ---
+        print("\n" + "="*20 + " GENERATE SPEECH DEBUG INFO " + "="*20)
+        print(f"Group ID Used: '{self.group_id}'")
+        print(f"API Key Used:  '{self.api_key}'")
+        print("="*60 + "\n")
+        # ---------------------------------
+        
         payload = {
             "model": "speech-2.5-hd-preview",
             "text": text,
@@ -135,7 +151,6 @@ class MinimaxTtsService(AIService):
                 logger.error("TTS response contained no audio data.")
                 return None
             
-            # The crucial fix: decode hexadecimal string to bytes
             audio_bytes = bytes.fromhex(audio_hex)
             logger.info(f"Successfully generated {len(audio_bytes)} bytes of audio.")
             return audio_bytes

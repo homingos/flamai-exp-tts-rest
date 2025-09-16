@@ -1,12 +1,21 @@
+# /tests/conftest.py
+
 import pytest
 from fastapi.testclient import TestClient
+import os
 
-# By importing 'app', we trigger the sys.path modification inside app.py,
-# which makes all other project imports work correctly for pytest.
+# --- FIX: Set mock environment variables HERE, before the app is imported. ---
+os.environ["MINIMAX_API_KEY"] = "test-key"
+os.environ["MINIMAX_GROUP_ID"] = "test-group"
+# --------------------------------------------------------------------------
+
+# Now, when 'app' is imported, it will correctly find the environment variables.
 from app import app
 
 @pytest.fixture(scope="module")
 def test_client():
     """Create a TestClient instance for testing the API."""
-    client = TestClient(app)
-    yield client
+    # The TestClient will correctly run the app's lifespan,
+    # and the MinimaxTtsService will now initialize successfully.
+    with TestClient(app) as client:
+        yield client

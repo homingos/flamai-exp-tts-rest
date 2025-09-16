@@ -1,16 +1,15 @@
+# /tests/test_api.py
+
 import pytest
 import respx
 from fastapi.testclient import TestClient
 from httpx import Response
 from pathlib import Path
-import os
+# import os <-- Can be removed if not used elsewhere
 
-# Set a dummy env var for testing if not already set.
-# This ensures tests run even without a real .env file.
-os.environ.setdefault("MINIMAX_API_KEY", "test-key")
-os.environ.setdefault("MINIMAX_GROUP_ID", "test-group")
+# --- FIX: Remove the os.environ.setdefault lines from here ---
 
-from src.utils.config.settings import settings # Import after setting env vars
+# from src.utils.config.settings import settings <-- This can also be removed
 
 MINIMAX_BASE_URL = "https://api.minimax.io/v1"
 
@@ -27,6 +26,7 @@ def test_clone_and_generate_success(test_client: TestClient, mock_audio_file: Pa
     Test the full automated workflow: clone a voice and generate speech.
     This test mocks all external API calls to MiniMax.
     """
+    # ... (rest of the test remains exactly the same) ...
     # 1. Mock the file upload endpoint
     upload_route = respx.post(f"{MINIMAX_BASE_URL}/files/upload").mock(
         return_value=Response(

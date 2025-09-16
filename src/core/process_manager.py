@@ -1,3 +1,5 @@
+# /src/core/process_manager.py
+
 import os
 import shutil
 import uuid
@@ -5,10 +7,9 @@ import time
 from pathlib import Path
 from typing import Optional, Dict
 
-from utils.resources.logger import logger
-from utils.config.settings import settings
+from src.utils.resources.logger import logger      # <--- FIXED
+from src.utils.config.settings import settings    # <--- FIXED
 
-# ... (rest of the file remains the same) ...
 class ProcessManager:
     def __init__(self):
         self.config = settings.get("process_manager", {})

@@ -2,12 +2,12 @@ import asyncio
 import signal
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
+import os  # Make sure to import os
 
-from utils.resources.logger import logger
-from utils.config.settings import settings
+from src.utils.resources.logger import logger
+from src.utils.config.settings import settings
 from .process_manager import ProcessManager, create_process_manager
 
-# ... (rest of the file remains the same) ...
 class ServiceConfig:
     def __init__(self, name: str, enabled: bool = True, initialization_timeout: float = 30.0, config: dict = None):
         self.name = name
@@ -62,6 +62,11 @@ class ServerManager:
                 await service.shutdown()
 
     def setup_signal_handlers(self):
+        # Only set signal handlers if not running inside pytest
+        if "PYTEST_CURRENT_TEST" in os.environ:
+            logger.info("Skipping signal handler setup in test environment.")
+            return
+
         try:
             loop = asyncio.get_running_loop()
             for sig in (signal.SIGINT, signal.SIGTERM):

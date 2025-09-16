@@ -4,7 +4,10 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
+# --- THIS IS THE FIX ---
 from src.api.routes import router as api_router
+# -----------------------
+
 from src.core.server_manager import create_server_manager, ServerManager
 from src.core.process_manager import create_process_manager, ProcessManager
 from src.utils.resources.logger import logger
